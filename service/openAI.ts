@@ -2,7 +2,6 @@ import OpenAI from "openai";
 import { ChatCompletionMessage } from "openai/resources";
 import { CHOICES } from "../constants/constants";
 
-
 const query = async (question: string, choice: string):Promise<ChatCompletionMessage> => {
 
     let content = () => {
@@ -25,7 +24,7 @@ const query = async (question: string, choice: string):Promise<ChatCompletionMes
         }
     };
 
-    const openai = new OpenAI({ apiKey: process.env.EXPO_PUBLIC_OPEN_AI_API_KEY, dangerouslyAllowBrowser: true });
+    const openai = new OpenAI({ apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY, dangerouslyAllowBrowser: true });
 
     const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
