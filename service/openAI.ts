@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { ChatCompletionMessage } from "openai/resources";
 import { CHOICES } from "../constants/constants";
+import Config from 'react-native-config';
 
 const query = async (text: string, choices: string[]):Promise<ChatCompletionMessage> => {
 
@@ -25,9 +26,11 @@ const query = async (text: string, choices: string[]):Promise<ChatCompletionMess
         prompt += '\n Logo:';
     }
 
-    console.log(prompt);
+    const openAiApiKey = Config.OPENAI_API_KEY;
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, dangerouslyAllowBrowser: true });
+    console.log('process.env.OPENAI_API_KEY', openAiApiKey);
+
+    const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
 
     const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",

@@ -17,7 +17,8 @@ const photoPage = () => {
     const [pic, setPic] = useState<string>('');
     const [result, setResult] = useState<ChatCompletionMessage>();
     const navigation = useNavigation<any>();
-    
+    const [currentText, setCurrentText] = useState<string>('');
+    const typeSpeed = 10;
 
     useEffect(() => {
         (async() => {
@@ -58,6 +59,23 @@ const photoPage = () => {
         
     }, [text]);
 
+    useEffect(() => {
+        const content = result?.content;
+        if (!content) return;
+        let currentIndex = 0;
+        const typeInterval = setInterval(() => {
+            if(currentIndex < content.length){
+                setCurrentText(prevText => prevText + content[currentIndex]);
+                currentIndex++;
+            } else {
+                clearInterval(typeInterval);
+            }
+
+        }, typeSpeed);
+
+        return () => clearInterval(typeInterval);
+    }, [result])
+
     function init(){
         setText('');
         setPic('');
@@ -88,7 +106,7 @@ const photoPage = () => {
                 />}>
                 <View style={{ flex: 1}}>
                     <ThemedText>
-                        {result.content}
+                        {currentText}
                     </ThemedText>
                     <TouchableOpacity style={styles.button} onPress={retake}>
                         <Text style={styles.text}>Retake</Text>

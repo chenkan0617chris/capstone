@@ -1,4 +1,4 @@
-import { StyleSheet, Image, View, TouchableOpacity, Text, Button, Dimensions, Alert } from 'react-native';
+import { StyleSheet, Image, View, TouchableOpacity, Text, Button, Dimensions, Alert, Animated } from 'react-native';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,10 +8,12 @@ import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { TabBarIcon } from '../components/navigation/TabBarIcon';
 import { CHOICES } from '../constants/constants';
-import { ButtonStyle } from '../constants/Colors';
+import { BoxShadow, ButtonStyle } from '../constants/Colors';
 import { processPic } from '../service/opencv';
 import cv, { bool } from "@techstark/opencv-js";
 import Checkbox from 'expo-checkbox';
+
+const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 
 export default function HomeScreen() {
 
@@ -24,10 +26,11 @@ export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>();
   const picRef = useRef<any>();
+
+  const animationValue = useRef(new Animated.Value(0)).current;
+  const opacityValue = useRef(new Animated.Value(0)).current;
   
   const navigation = useNavigation<any>();
-
-  const windowWidth = Dimensions.get('window').width;
 
   useEffect(() => {
     (async() => {
@@ -37,7 +40,7 @@ export default function HomeScreen() {
       }
     })();
     
-    
+
     return () => {
       init();
     }
@@ -47,6 +50,24 @@ export default function HomeScreen() {
     setSetting(false);
     setPic(undefined);
     setFacing('back');
+  };
+
+  const startAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        // 淡入 + 向下移动
+          Animated.timing(animationValue, {
+            toValue: windowWidth * 0.8,  // 动画终点
+            duration: 2000,              // 动画时长
+            useNativeDriver: true,
+          }),
+          Animated.timing(animationValue, {
+            toValue: 0,                  // 返回起点
+            duration: 2000,              // 动画时长
+            useNativeDriver: true,
+          }),
+      ])
+    ).start();
   };
 
   
@@ -210,6 +231,7 @@ export default function HomeScreen() {
         </View>
       </View>
     }
+    startAnimation();
 
     return (
       <View style={styles.container}>
@@ -228,6 +250,11 @@ export default function HomeScreen() {
             </View>
           </View>
         </CameraView>
+        <View style={styles.overlay}>
+          <View style={styles.frame}>
+            <Animated.View style={[styles.scannerLine, {  transform: [{ translateY: animationValue }] }]} />
+          </View>
+        </View>
       </View>
     );
   }
@@ -306,7 +333,31 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'static',
     alignItems: 'center',
-    width: '100%'
+    width: '100%',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  frame: {
+    width: windowWidth * 0.6,
+    height: windowWidth * 0.8,
+    borderWidth: 1,
+    borderColor: '#9e9e9e',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  scannerLine: {
+    width: '100%',
+    height: 1,
+    backgroundColor: 'lime',
+    position: 'absolute',
+    top: 0,
   },
   buttonContainer: {
     flexDirection: 'row',
