@@ -4,22 +4,23 @@ import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { TabBarIcon } from '../components/navigation/TabBarIcon';
 import { CHOICES } from '../constants/constants';
 import { ButtonStyle } from '../constants/Colors';
+import { processPic } from '../service/opencv';
+import cv, { bool } from "@techstark/opencv-js";
+import Checkbox from 'expo-checkbox';
 
 export default function HomeScreen() {
 
   const [facing, setFacing] = useState<CameraType>('back');
 
-  const [open, setOpen] = useState<boolean>(false);
+  const [setting, setSetting] = useState<boolean>(false);
   const [pic, setPic] = useState<any>();
-  const [choices, setChoices] = useState<string>(CHOICES[0]);
+  const [choices, setChoices] = useState<string[]>(CHOICES);
   const [chooseFlag, setChooseFlag] = useState<boolean>(false);
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>();
   const picRef = useRef<any>();
@@ -28,14 +29,22 @@ export default function HomeScreen() {
 
   const windowWidth = Dimensions.get('window').width;
 
-  useEffect(() =>{
+  useEffect(() => {
+    (async() => {
+      const choiceStore = await AsyncStorage.getItem('choice');
+      if(choiceStore){
+        setChoices(JSON.parse(choiceStore));
+      }
+    })();
+    
+    
     return () => {
       init();
     }
   }, []);
 
   const init = () => {
-    setOpen(false);
+    setSetting(false);
     setPic(undefined);
     setFacing('back');
   };
@@ -46,7 +55,7 @@ export default function HomeScreen() {
   }
 
   function toggleCameraOpen(){
-    setOpen(current => !current);
+    setSetting(current => !current);
   }
 
   const takePic = async () => {
@@ -77,7 +86,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => setChooseFlag(false)} style={{ marginBottom: 10 }}>
               <Text style={{ color: 'blue', textDecorationLine: 'underline' }}>Go back to setting</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setOpen(true)}>
+            <TouchableOpacity onPress={() => setSetting(true)}>
               <View style={styles.cameraBorder}>
                 <TabBarIcon style={{fontSize: 50}} name='camera-sharp' />
               </View>
@@ -87,18 +96,29 @@ export default function HomeScreen() {
     }
     return <View style={{ display: 'flex', alignItems: 'center' }}>
         <ThemedText style={{ textAlign: 'center', marginBottom: 20 }}>Choose what you want to analyze:</ThemedText>
-        <SegmentedControl
-          style={{ height: 50, width: windowWidth * 0.9, marginBottom: 20 }}
-          values={CHOICES}
-          selectedIndex={selectedIndex}
-          onChange={(event) => {
-            setChoices(event.nativeEvent.value);
-            setSelectedIndex(event.nativeEvent.selectedSegmentIndex);
-            AsyncStorage.setItem('choice', event.nativeEvent.value);
-          }}
-        />
+        {CHOICES.map((item: string) => {
+          return <View key={item} style={{ display: 'flex', alignSelf: 'flex-start', flexDirection: 'row' ,alignItems: 'center', justifyContent: 'flex-start' }}>
+            <Checkbox
+              style={{ margin: 8 }}
+              value={choices.includes(item)}
+              onValueChange={(value: boolean) => {
+                if(value){
+                  setChoices([...choices, item]);
+                } else {
+                  setChoices(choices.filter((c: string) => c !== item));
+                }
+              }}
+              color={choices.includes(item) ? '#4630EB' : undefined}
+            />
+            <Text>{item}</Text>
+          </View>
+          
+        })}
         <View style={{ width: windowWidth * 0.3, alignItems: 'center'  }}>
-          <Button onPress={() => setChooseFlag(true)} title='Start'></Button>
+          <Button onPress={() => {
+            AsyncStorage.setItem('choice', JSON.stringify(choices));
+            setChooseFlag(true);
+          }} title='Start'></Button>
         </View>
     </View>
   };
@@ -123,19 +143,31 @@ export default function HomeScreen() {
       },
     );
 
-  function detectBlurPic(target: any){
+  async function detectBlurPic(target: string) {
+    // console.log(target);
 
-    // let img = cv.imread(target);
-    // if(!img){
-    //   // showAlert();
-    //   // return;
+    // try {
+    //   let img = cv.imread(target);
+
+    // } catch(e) {
+    //   console.log(e);
     // }
 
-    // processPic(target);
+    // return ;
+    // if(!img){
+      // showAlert();
+      // return;
+    // }
+
+    // let score = processPic(img);
+
+    // console.log('score', score);
   };
 
   const analyze = async () => {
     
+    // detectBlurPic(pic);
+
     navigation.navigate('photo');
   };
 
@@ -144,7 +176,7 @@ export default function HomeScreen() {
     await AsyncStorage.clear();
   };
 
-  if(open){
+  if(setting){
     if (!permission) {
       // Camera permissions are still loading.
       return <View />;
@@ -162,7 +194,7 @@ export default function HomeScreen() {
 
     if(pic){
       // if took pic
-      return <SafeAreaView style={styles.safeArea}>
+      return <View style={{ height: '100%' }}>
         <Image
           style={{ width: '100%', height: '90%' }}
           source={{ uri: pic }}
@@ -176,7 +208,7 @@ export default function HomeScreen() {
             <Text style={styles.text}>Retake</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     }
 
     return (
@@ -233,7 +265,7 @@ const styles = StyleSheet.create({
     borderRadius: 8
   },
   safeArea: {
-    flex: 1
+    display: 'flex'
   },
   cameraBox: {
     flex: 1,

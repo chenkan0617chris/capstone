@@ -23,4 +23,5 @@ export function processPic(pic: any) {
     const focusMeasure = Math.floor(variance(lap_gray.data));
 
     console.log(`Focus Score: ${focusMeasure}`);
+    return focusMeasure;
   }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Touchable, TouchableOpacity, View, Text } from 'react-native';
 import query from "../service/openAI";
 import { ChatCompletionMessage } from "openai/resources";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,8 @@ import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { ThemedText } from "../components/ThemedText";
 import { CHOICES } from "../constants/constants";
 import ParallaxScrollView from "../components/ParallaxScrollView";
+import { ButtonStyle } from "../constants/Colors";
+import { useNavigation } from '@react-navigation/native';
 
 const photoPage = () => {
 
@@ -14,6 +16,7 @@ const photoPage = () => {
 
     const [pic, setPic] = useState<string>('');
     const [result, setResult] = useState<ChatCompletionMessage>();
+    const navigation = useNavigation<any>();
     
 
     useEffect(() => {
@@ -33,9 +36,7 @@ const photoPage = () => {
         })();
 
         return () => {
-            setText('');
-            setPic('');
-            setResult(undefined);
+            init();
         }
     }, []);
 
@@ -43,8 +44,12 @@ const photoPage = () => {
         (async () => {
             if(text){
                 console.log(text);
-                let choice = await AsyncStorage.getItem('choice') || CHOICES[0];
-                const res = await query(text, choice);
+                let choice = await AsyncStorage.getItem('choice');
+                let param:string[] = CHOICES;
+                if(choice){
+                    param = JSON.parse(choice);
+                }
+                const res = await query(text, param);
                 setResult(res);
     
                 console.log(res);
@@ -52,6 +57,17 @@ const photoPage = () => {
         })();
         
     }, [text]);
+
+    function init(){
+        setText('');
+        setPic('');
+        setResult(undefined);
+    }
+
+    function retake() {
+        init();
+        navigation.navigate('index');
+    }
 
     if(!result){
         return (
@@ -63,15 +79,6 @@ const photoPage = () => {
 
     if(pic){
         return (
-            // <View>
-            //     <Image 
-            //         style={{ width: '100%', height: '50%' }}
-            //         source={{ uri: pic }}
-            //     />
-            //     <ThemedText>
-            //         {result.content}
-            //     </ThemedText>
-            // </View>
             <ParallaxScrollView
                 headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
                 headerImage={
@@ -79,9 +86,14 @@ const photoPage = () => {
                     style={{ width: '100%', height: '100%' }} 
                     source={{ uri: pic}}
                 />}>
-                <ThemedText>
-                    {result.content}
-                </ThemedText>
+                <View style={{ flex: 1}}>
+                    <ThemedText>
+                        {result.content}
+                    </ThemedText>
+                    <TouchableOpacity style={styles.button} onPress={retake}>
+                        <Text style={styles.text}>Retake</Text>
+                    </TouchableOpacity>
+                </View>
             </ParallaxScrollView>  
         );
     }
@@ -104,5 +116,18 @@ const styles = StyleSheet.create({
         margin: 'auto',
         justifyContent: 'center'
     },
+    text: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: 'white',
+      },
+    button: {
+        backgroundColor: '#1976d2',
+        flex: 1,
+        alignItems: 'center',
+        margin: 16,
+        borderRadius: 4,
+        padding: 8,
+    }
   });
 

@@ -2,29 +2,32 @@ import OpenAI from "openai";
 import { ChatCompletionMessage } from "openai/resources";
 import { CHOICES } from "../constants/constants";
 
-const query = async (question: string, choice: string):Promise<ChatCompletionMessage> => {
+const query = async (text: string, choices: string[]):Promise<ChatCompletionMessage> => {
 
-    let content = () => {
-        switch(choice){
-            // Ingredient
-            case CHOICES[1]:
-                return `find the Ingredient of this information below. Use a table to display. 
-                Information: ${question}`;
-            case CHOICES[2]:
-                return `find the Nutrition of this information below. Use a table to display. 
-                Information: ${question}`;
-            case CHOICES[3]:
-                return `find the Brand of this information. display it like "Brand: brandName". 
-                Information: ${question}`;
-            case CHOICES[4]:
-                return `find the Logo of this information. display it like "Brand: brandName". 
-                Information: ${question}`;
-            default:
-                return `give a summary of this information. Use a table to display. ${question}`;
-        }
-    };
+    let prompt = `Detected text:
+        ${text}
+        These are the text that I detected from a image, please give the information as the template I list in the following. 
+        If you can fill the broken words up, please provide the complete characters. If there is no information about the criteria, then respond 'No Found!'.
+        when Ingredient and Nutrition are in the template, please respond a table.
+        Template:
+    `;
 
-    const openai = new OpenAI({ apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY, dangerouslyAllowBrowser: true });
+    if(choices.includes(CHOICES[0])){
+        prompt += '\n Ingredient:';
+    }
+    if(choices.includes(CHOICES[1])){
+        prompt += '\n Nutrition:';
+    }
+    if(choices.includes(CHOICES[2])){
+        prompt += '\n Brand:';
+    }
+    if(choices.includes(CHOICES[3])){
+        prompt += '\n Logo:';
+    }
+
+    console.log(prompt);
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, dangerouslyAllowBrowser: true });
 
     const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -32,7 +35,7 @@ const query = async (question: string, choice: string):Promise<ChatCompletionMes
             { role: "system", content: "You are a helpful character analyzer." },
             {
                 role: "user",
-                content: content()
+                content: prompt
             },
         ],
     });
