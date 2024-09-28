@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image, StyleSheet, Touchable, TouchableOpacity, View, Text } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import query from "../service/openAI";
 import { ChatCompletionMessage } from "openai/resources";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,13 +7,11 @@ import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { ThemedText } from "../components/ThemedText";
 import { CHOICES } from "../constants/constants";
 import ParallaxScrollView from "../components/ParallaxScrollView";
-import { ButtonStyle } from "../constants/Colors";
 import { useNavigation } from '@react-navigation/native';
 
 const photoPage = () => {
 
     const [text, setText] = useState<string>('');
-
     const [pic, setPic] = useState<string>('');
     const [result, setResult] = useState<ChatCompletionMessage>();
     const navigation = useNavigation<any>();
@@ -30,7 +28,6 @@ const photoPage = () => {
                 const result = await TextRecognition.recognize(picItem);
                 let text = result.text;
                 setText(text);
-                console.log(text);
             } catch(e){
                 console.log(e);
             }
@@ -44,7 +41,6 @@ const photoPage = () => {
     useEffect(() => {
         (async () => {
             if(text){
-                console.log(text);
                 let choice = await AsyncStorage.getItem('choice');
                 let param:string[] = CHOICES;
                 if(choice){
@@ -52,8 +48,6 @@ const photoPage = () => {
                 }
                 const res = await query(text, param);
                 setResult(res);
-    
-                console.log(res);
             }
         })();
         
@@ -125,10 +119,6 @@ const styles = StyleSheet.create({
       bottom: -90,
       left: -35,
       position: 'absolute',
-    },
-    titleContainer: {
-      flexDirection: 'row',
-      gap: 8,
     },
     analyzing: {
         margin: 'auto',

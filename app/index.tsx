@@ -1,19 +1,22 @@
 import { StyleSheet, Image, View, TouchableOpacity, Text, Button, Dimensions, Alert, Animated } from 'react-native';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
-import { useEffect, useRef, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { TabBarIcon } from '../components/navigation/TabBarIcon';
-import { CHOICES } from '../constants/constants';
-import { BoxShadow, ButtonStyle } from '../constants/Colors';
-import { processPic } from '../service/opencv';
-import cv, { bool } from "@techstark/opencv-js";
+import { CHOICES, SCREEN_SCANNING } from '../constants/constants';
+import { ButtonStyle } from '../constants/Colors';
 import Checkbox from 'expo-checkbox';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as MediaLibrary from 'expo-media-library';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
+
+const cropWidth = windowWidth * 0.6;
+const cropHeight = windowHeight * 0.4;
+
 
 export default function HomeScreen() {
 
@@ -28,7 +31,6 @@ export default function HomeScreen() {
   const picRef = useRef<any>();
 
   const animationValue = useRef(new Animated.Value(0)).current;
-  const opacityValue = useRef(new Animated.Value(0)).current;
   
   const navigation = useNavigation<any>();
 
@@ -38,6 +40,8 @@ export default function HomeScreen() {
       if(choiceStore){
         setChoices(JSON.parse(choiceStore));
       }
+
+      await MediaLibrary.requestPermissionsAsync();
     })();
     
 
@@ -55,15 +59,14 @@ export default function HomeScreen() {
   const startAnimation = () => {
     Animated.loop(
       Animated.sequence([
-        // 淡入 + 向下移动
           Animated.timing(animationValue, {
-            toValue: windowWidth * 0.8,  // 动画终点
-            duration: 2000,              // 动画时长
+            toValue: cropHeight,
+            duration: 2000,  
             useNativeDriver: true,
           }),
           Animated.timing(animationValue, {
-            toValue: 0,                  // 返回起点
-            duration: 2000,              // 动画时长
+            toValue: 0, 
+            duration: 2000,
             useNativeDriver: true,
           }),
       ])
@@ -87,22 +90,51 @@ export default function HomeScreen() {
     };
 
     let newPic = await cameraRef.current.takePictureAsync(options);
-    setPic(newPic.uri);
+
+    const croppedImage = await cropImageToSquare(newPic);
+    setPic(croppedImage.uri);
 
     try {
-      await AsyncStorage.setItem('pic', newPic.uri);
+      await AsyncStorage.setItem('pic', croppedImage.uri);
+
+      await MediaLibrary.createAssetAsync(croppedImage.uri);
     } catch (e) {
       console.log(e);
     }
   };
 
+  const cropImageToSquare = async (photo: any) => {
+
+    const widthMultiple = photo.width / windowWidth;
+    const heightMultiple = photo.height / windowHeight;
+
+    const xOffset = (photo.width - cropWidth * widthMultiple) / 2;
+    const yOffset = (photo.height - cropHeight * heightMultiple) / 2;
+
+    const cropped = await ImageManipulator.manipulateAsync(
+      photo.uri,
+      [
+        {
+          crop: {
+            originX: xOffset,
+            originY: yOffset,
+            width: cropWidth * widthMultiple,
+            height: cropHeight * heightMultiple,
+          },
+        },
+      ],
+      { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+    );
+
+    return cropped;
+  };
+
   const renderOptions = () => {
-    console.log(choices);
     if(chooseFlag){
       return (
           <View style={styles.cameraBox}>
             <ThemedText>
-              Your Choices: {choices}
+              Your Choices: {JSON.stringify(choices)}
             </ThemedText>
             <TouchableOpacity onPress={() => setChooseFlag(false)} style={{ marginBottom: 10 }}>
               <Text style={{ color: 'blue', textDecorationLine: 'underline' }}>Go back to setting</Text>
@@ -135,60 +167,22 @@ export default function HomeScreen() {
           </View>
           
         })}
-        <View style={{ width: windowWidth * 0.3, alignItems: 'center'  }}>
-          <Button onPress={() => {
-            AsyncStorage.setItem('choice', JSON.stringify(choices));
-            setChooseFlag(true);
-          }} title='Start'></Button>
+
+        <View style={{ width: windowWidth * 0.3, height: 80 }}>
+          <TouchableOpacity 
+            style={[ButtonStyle.button, {width: 100}]} 
+            onPress={() => {
+              AsyncStorage.setItem('choice', JSON.stringify(choices));
+              setChooseFlag(true);
+            }}
+          >
+            <Text style={styles.text}>Start</Text>
+          </TouchableOpacity>
         </View>
     </View>
   };
 
-  const showAlert = () =>
-    Alert.alert(
-      'Alert Title',
-      'My Alert Msg',
-      [
-        {
-          text: 'Cancel',
-          onPress: () => Alert.alert('Cancel Pressed'),
-          style: 'cancel',
-        },
-      ],
-      {
-        cancelable: true,
-        onDismiss: () =>
-          Alert.alert(
-            'This alert was dismissed by tapping outside of the alert dialog.',
-          ),
-      },
-    );
-
-  async function detectBlurPic(target: string) {
-    // console.log(target);
-
-    // try {
-    //   let img = cv.imread(target);
-
-    // } catch(e) {
-    //   console.log(e);
-    // }
-
-    // return ;
-    // if(!img){
-      // showAlert();
-      // return;
-    // }
-
-    // let score = processPic(img);
-
-    // console.log('score', score);
-  };
-
   const analyze = async () => {
-    
-    // detectBlurPic(pic);
-
     navigation.navigate('photo');
   };
 
@@ -271,10 +265,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  btmButton: {
-    margin: 16,
-    
-  },
   buttons: {
     display: 'flex',
     alignItems: 'center',
@@ -290,9 +280,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'solid',
     borderRadius: 8
-  },
-  safeArea: {
-    display: 'flex'
   },
   cameraBox: {
     flex: 1,
@@ -310,9 +297,8 @@ const styles = StyleSheet.create({
   },
   titleName: {
     fontSize: 60,
-    lineHeight: 60,
+    lineHeight: 70,
     textAlign: 'center',
-    margin: 16
   },
   subtitle: {
     textAlign: 'center',
@@ -322,7 +308,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // backgroundColor: '#A1CEDC',
     backgroundColor: '#D0D0D0',
   },
   message: {
@@ -345,8 +330,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   frame: {
-    width: windowWidth * 0.6,
-    height: windowWidth * 0.8,
+    width: cropWidth,
+    height: cropHeight,
     borderWidth: 1,
     borderColor: '#9e9e9e',
     position: 'relative',
