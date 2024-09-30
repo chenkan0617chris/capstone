@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
-import query from "../service/openAI";
+import query from "../../service/openAI";
 import { ChatCompletionMessage } from "openai/resources";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
-import { ThemedText } from "../components/ThemedText";
-import { CHOICES } from "../constants/constants";
-import ParallaxScrollView from "../components/ParallaxScrollView";
-import { useNavigation } from '@react-navigation/native';
+import { ThemedText } from "../../components/ThemedText";
+import { CHOICES } from "../../constants/constants";
+import ParallaxScrollView from "../../components/ParallaxScrollView";
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 
 const photoPage = () => {
 
@@ -18,25 +18,28 @@ const photoPage = () => {
     const [currentText, setCurrentText] = useState<string>('');
     const typeSpeed = 10;
 
+    const isFocused = useIsFocused();
+
     useEffect(() => {
-        (async() => {
-            try {
-                let picItem = await AsyncStorage.getItem('pic');
-                if(!picItem) return;
-                setPic(picItem);
-
-                const result = await TextRecognition.recognize(picItem);
-                let text = result.text;
-                setText(text);
-            } catch(e){
-                console.log(e);
-            }
-        })();
-
-        return () => {
+        if(isFocused){
+            (async() => {
+                try {
+                    let picItem = await AsyncStorage.getItem('pic');
+                    if(!picItem) return;
+                    setPic(picItem);
+    
+                    const result = await TextRecognition.recognize(picItem);
+                    let text = result.text;
+                    setText(text);
+                    console.log(text);
+                } catch(e){
+                    console.log(e);
+                }
+            })();
+        } else {
             init();
         }
-    }, []);
+    }, [isFocused]);
 
     useEffect(() => {
         (async () => {
@@ -68,17 +71,18 @@ const photoPage = () => {
         }, typeSpeed);
 
         return () => clearInterval(typeInterval);
-    }, [result])
+    }, [result]);
 
-    function init(){
+    async function init(){
         setText('');
         setPic('');
         setResult(undefined);
+        setCurrentText('');
     }
 
-    function retake() {
-        init();
-        navigation.navigate('index');
+    async function retake() {
+        await init();
+        await navigation.navigate('index');
     }
 
     if(!result){
