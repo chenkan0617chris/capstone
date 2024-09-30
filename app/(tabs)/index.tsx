@@ -172,7 +172,7 @@ export default function HomeScreen() {
   if (!permission.granted) {
     // Camera permissions are not granted yet.
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, {height: '100%', justifyContent: 'center'}]}>
         <Text style={styles.message}>We need your permission to show the camera</Text>
         <Button onPress={requestPermission} title="grant permission" />
       </View>

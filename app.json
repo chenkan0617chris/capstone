@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "capstone",
+    "name": "Label Analyzer",
     "slug": "capstone",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.jpeg",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.jpeg",
         "backgroundColor": "#ffffff"
       },
       "package": "com.chenkan0617.capstone"
