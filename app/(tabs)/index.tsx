@@ -11,6 +11,7 @@ import { ButtonStyle } from '../../constants/Colors';
 import Checkbox from 'expo-checkbox';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
+import * as ImagePicker from 'expo-image-picker';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 
@@ -74,6 +75,20 @@ export default function HomeScreen() {
 
   function toggleCameraOpen(){
     setPhotoing(current => !current);
+  }
+
+  async function uploadPicture(){
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setPic(result.assets[0].uri);
+      await AsyncStorage.setItem('pic', result.assets[0].uri);
+    }
   }
 
   const analyze = async () => {
@@ -223,6 +238,9 @@ export default function HomeScreen() {
             <TabBarIcon style={{fontSize: 50}} name='camera-sharp' />
           </View>
         </TouchableOpacity>
+        <TouchableOpacity style={[ButtonStyle.button, { height: 50, alignSelf: 'center', flex: undefined}]} onPress={uploadPicture}>
+          <Text style={styles.text}>Upload Picture</Text>
+        </TouchableOpacity>
       </View>
     </ThemedView>
   }
@@ -235,7 +253,7 @@ export default function HomeScreen() {
         <View style={{ display: 'flex', alignItems: 'center' }}>
           <ThemedText style={{ textAlign: 'center', marginBottom: 20 }}>Choose what you want to analyze:</ThemedText>
           {CHOICES.map((item: string) => {
-            return <View key={item} style={{ display: 'flex', alignSelf: 'flex-start', flexDirection: 'row' ,alignItems: 'center', justifyContent: 'flex-start' }}>
+            return <View key={item} style={{ display: 'flex', width: windowWidth * 0.5, alignSelf: 'center', flexDirection: 'row' ,alignItems: 'center', justifyContent: 'flex-start' }}>
               <Checkbox
                 style={{ margin: 8 }}
                 value={choices.includes(item)}
@@ -275,8 +293,8 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   cameraBorder: {
-    width: 350,
-    height: 350,
+    width: 280,
+    height: 280,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
