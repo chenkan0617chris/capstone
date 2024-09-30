@@ -1,4 +1,4 @@
-import { StyleSheet, Image, View, TouchableOpacity, Text, Button, Dimensions, Animated } from 'react-native';
+import { StyleSheet, Image, View, TouchableOpacity, Text, Button, Dimensions, Animated, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
@@ -36,6 +36,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if(isFocused){
       (async() => {
+        await MediaLibrary.requestPermissionsAsync();
         const choiceStore = await AsyncStorage.getItem('choice');
         if(choiceStore){
           setChoices(JSON.parse(choiceStore));
@@ -43,7 +44,6 @@ export default function HomeScreen() {
         } else {
           setShowChoices(false);
         }
-        await MediaLibrary.requestPermissionsAsync();
       })();
     } else {
       init();
@@ -77,10 +77,12 @@ export default function HomeScreen() {
   }
 
   const analyze = async () => {
+    setPic(undefined);
     navigation.navigate('photo');
   };
 
   const retake = async () => {
+    await AsyncStorage.setItem('pic', '');
     setPic(undefined);
   };
 
@@ -90,20 +92,36 @@ export default function HomeScreen() {
       base64: true,
       exif: false
     };
-
+    try {
     let newPic = await cameraRef.current.takePictureAsync(options);
 
     const croppedImage = await cropImageToSquare(newPic);
     setPic(croppedImage.uri);
+    await AsyncStorage.setItem('pic', croppedImage.uri);
 
-    try {
-      await AsyncStorage.setItem('pic', croppedImage.uri);
-
-      await MediaLibrary.createAssetAsync(croppedImage.uri);
+    await MediaLibrary.createAssetAsync(croppedImage.uri);
     } catch (e) {
       console.log(e);
     }
   };
+
+  const emptyChoiceAlert = () => {
+    return Alert.alert('Notification', 'Please choose at least one category!', [
+      {
+        text: 'Ok',
+        onPress: () => console.log('ok pressed'),
+      }
+    ])
+  };
+
+  function handleStart() {
+    if(choices.length === 0){
+      return emptyChoiceAlert();
+    }
+
+    AsyncStorage.setItem('choice', JSON.stringify(choices));
+    setShowChoices(true);
+  }
 
   const cropImageToSquare = async (photo: any) => {
 
@@ -150,7 +168,7 @@ export default function HomeScreen() {
     // if took pic
     return <View style={{ height: '100%' }}>
       <Image
-        style={{ width: '100%', height: '90%' }}
+        style={{ position: 'absolute', width: '100%', height: '100%' }}
         source={{ uri: pic }}
         ref={picRef}
       />
@@ -166,26 +184,23 @@ export default function HomeScreen() {
   }
 
   if(photoing) {
-    startAnimation();
     return (
       <View style={styles.container}>
-        <CameraView style={styles.camera} ref={cameraRef}>
-          <View style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={ButtonStyle.button} onPress={takePic}>
-                <Text style={styles.text}>Take</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={ButtonStyle.button} onPress={toggleCameraOpen}>
-                <Text style={styles.text}>Cancel</Text>
-              </TouchableOpacity>
+        <CameraView style={styles.camera} ref={cameraRef} onCameraReady={startAnimation}>
+          <View style={styles.overlay}>
+            <View style={styles.frame}>
+              <Animated.View style={[styles.scannerLine, {  transform: [{ translateY: animationValue }] }]} />
             </View>
           </View>
-        </CameraView>
-        <View style={styles.overlay}>
-          <View style={styles.frame}>
-            <Animated.View style={[styles.scannerLine, {  transform: [{ translateY: animationValue }] }]} />
+          <View style={styles.buttons}>
+            <TouchableOpacity style={ButtonStyle.button} onPress={takePic}>
+              <Text style={styles.text}>Take</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={ButtonStyle.button} onPress={toggleCameraOpen}>
+              <Text style={styles.text}>Cancel</Text>
+            </TouchableOpacity>
           </View>
-        </View>
+        </CameraView>
       </View>
     );
   }
@@ -239,10 +254,7 @@ export default function HomeScreen() {
           <View style={{ width: windowWidth * 0.3, height: 80 }}>
             <TouchableOpacity 
               style={[ButtonStyle.button, {width: 100}]} 
-              onPress={() => {
-                AsyncStorage.setItem('choice', JSON.stringify(choices));
-                setShowChoices(true);
-              }}
+              onPress={handleStart}
             >
               <Text style={styles.text}>Start</Text>
             </TouchableOpacity>
@@ -256,8 +268,11 @@ const styles = StyleSheet.create({
   buttons: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row'
+    justifyContent: 'flex-end',
+    flexDirection: 'row',
+    height: '100%',
+    backgroundColor: 'transparent',
+    width: '100%'
   },
   cameraBorder: {
     width: 350,
@@ -292,8 +307,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
     backgroundColor: '#D0D0D0',
   },
   message: {
@@ -302,10 +315,6 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
-    position: 'static',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%'
   },
   overlay: {
     position: 'absolute',
@@ -330,12 +339,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'lime',
     position: 'absolute',
     top: 0,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    margin: 24,
-    width: '100%'
   },
   button: {
     flex: 1,

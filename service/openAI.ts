@@ -28,8 +28,6 @@ const query = async (text: string, choices: string[]):Promise<ChatCompletionMess
 
     const openAiApiKey = Config.OPENAI_API_KEY;
 
-    console.log('process.env.OPENAI_API_KEY', openAiApiKey);
-
     const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
 
     const completion = await openai.chat.completions.create({
