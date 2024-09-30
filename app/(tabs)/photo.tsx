@@ -9,7 +9,7 @@ import { CHOICES } from "../../constants/constants";
 import ParallaxScrollView from "../../components/ParallaxScrollView";
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 
-const photoPage = () => {
+const PhotoPage = () => {
     const [processing, setProcessing] = useState<boolean>(false);
     const [text, setText] = useState<string>('');
     const [pic, setPic] = useState<string>('');
@@ -126,7 +126,7 @@ const photoPage = () => {
     );
 };
 
-export default photoPage;
+export default PhotoPage;
 
 const styles = StyleSheet.create({
     headerImage: {
