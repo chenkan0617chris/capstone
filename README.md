@@ -8,6 +8,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 2. Java openJDK 11
 3. Android SDK
 4. gradlew
+5. Android emulator device or physical device
 
 ## Get started
 
@@ -21,11 +22,10 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    OPENAI_API_KEY=YOUR_OPENAI_API_KEY
    ```
 
-5. Start the app
-
-   ```bash
-    npx expo start
-   ```
+3. Start your device and Start the app with your android studio
+       ```bash
+        npm start
+       ```
 
 In the output, you'll find options to open the app in a
 
@@ -35,6 +35,13 @@ In the output, you'll find options to open the app in a
 - [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+## Build and release
+
+```bash
+cd ./Android
+./gradlew assemblerelease
+```
 
 ## Get a fresh project
 
