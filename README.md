@@ -23,9 +23,9 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```
 
 3. Start your device and Start the app with your android studio
-       ```bash
-        npm start
-       ```
+   ```bash
+   npm start
+   ```
 
 In the output, you'll find options to open the app in a
 
