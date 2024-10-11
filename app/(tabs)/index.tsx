@@ -239,7 +239,7 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={[ButtonStyle.button, { height: 50, alignSelf: 'center', flex: undefined}]} onPress={uploadPicture}>
-          <Text style={styles.text}>Upload Picture</Text>
+          <Text style={styles.text}>Load Picture</Text>
         </TouchableOpacity>
       </View>
     </ThemedView>

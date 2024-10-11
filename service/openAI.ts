@@ -4,11 +4,12 @@ import { CHOICES } from "../constants/constants";
 import Config from 'react-native-config';
 
 const query = async (text: string, choices: string[]):Promise<ChatCompletionMessage> => {
-
-    let prompt = `Detected text:
+    let prompt = `
+        Ignore all previous information,
+        Detected text:
         ${text}
         These are the text that I detected from a image, please give the information as the template I list in the following. 
-        If you can fill the broken words up, please provide the complete characters. If there is no information about the criteria, then respond 'No Found!'.
+        If you can fill the broken words up, please provide the complete characters. If there is no information about the criteria, then respond 'Not Found!'.
         when Ingredient and Nutrition are in the template, please respond a table.
         Template:
     `;
@@ -21,9 +22,6 @@ const query = async (text: string, choices: string[]):Promise<ChatCompletionMess
     }
     if(choices.includes(CHOICES[2])){
         prompt += '\n Brand:';
-    }
-    if(choices.includes(CHOICES[3])){
-        prompt += '\n Logo:';
     }
 
     const openAiApiKey = Config.OPENAI_API_KEY;

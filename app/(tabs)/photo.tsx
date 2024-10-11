@@ -8,17 +8,22 @@ import { CHOICES } from "../../constants/constants";
 import ParallaxScrollView from "../../components/ParallaxScrollView";
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { Table, Row, Rows } from 'react-native-table-component';
+import { detectObjects, imageToTensor, loadModel } from "../../service/tensorFlow";
+import * as ImageManipulator from 'expo-image-manipulator';
+import ImageResizer from 'react-native-image-resizer';
 
 const PhotoPage = () => {
     const [processing, setProcessing] = useState<boolean>(false);
+    const [processingLogo, setProcessingLogo] = useState<boolean>(false);
+
     const [text, setText] = useState<string>('');
     const [pic, setPic] = useState<string>('');
     const navigation = useNavigation<any>();
     const isFocused = useIsFocused();
     const [category, setCategory] = useState<string[]>([]);
-    const [ingredient, setIngredient] = useState('');
-    const [nutrition, setNutrition] = useState('');
-    const [brand, setBrand] = useState('');
+    const [ingredient, setIngredient] = useState<any>('');
+    const [nutrition, setNutrition] = useState<any>('');
+    const [brand, setBrand] = useState<any>('');
     const [logo, setLogo] = useState('');
 
     useEffect(() => {
@@ -47,31 +52,83 @@ const PhotoPage = () => {
         (async () => {
             if(text){
                 let choice = await AsyncStorage.getItem('choice');
-                let param:string[] = CHOICES;
-                if(choice){
-                    param = JSON.parse(choice);
-                    setCategory(param);
-                }
+                let param:string[] = choice ? JSON.parse(choice) : CHOICES;
+                setCategory(param)
+ 
+
+                // processing text
                 const res = await query(text, param);
 
                 if(!res.content){
                     setProcessing(false);
+                    setProcessingLogo(false);
                     throw new Error('Fail to analyze');
                 }
 
-                const logoText = res.content.split(/\*\*Logo:\*\*|Logo:/);
-                setLogo(logoText[1]);
-                const brandText = logoText[0].split(/\*\*Brand:\*\*|Brand:/)
+                const brandText = res.content.split(/\*\*Brand:\*\*|Brand:/)
                 setBrand(brandText[1]);
                 const nutritionText = brandText[0].split(/\*\*Nutrition:\*\*|Nutrition:/);
                 setNutrition(nutritionText[1]);
                 const ingredientText = nutritionText[0].split(/\*\*Ingredient:\*\*|Ingredient:/);
                 setIngredient(ingredientText[1]);
                 setProcessing(false);
+
+                // processing logo
+                if(param.includes(CHOICES[3])) {
+                    setProcessingLogo(true);
+                    const logoUriString = await analyzeLogo();
+                    setLogo(logoUriString ?? '');
+                    setProcessingLogo(false);
+                }
             }
         })();
         
     }, [text]);
+
+    const analyzeLogo = async ()  => {
+        const model = await loadModel();
+        const jpgUri = await convertImage(pic);
+        if(!jpgUri) return;
+    
+        const tensor = await imageToTensor(jpgUri);
+        const prediction = await detectObjects(model, tensor);
+    
+        if(!prediction){
+            return null;
+        }
+     
+        const logo = await ImageManipulator.manipulateAsync(
+          pic,
+          [
+            {
+              crop: {
+                originX: prediction.bbox[0] < 0 ? 0 : prediction.bbox[0],
+                originY: prediction.bbox[1] < 0 ? 0 : prediction.bbox[1],
+                width: prediction.bbox[2],
+                height: prediction.bbox[3],
+              },
+            },
+          ],
+          { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+        );
+    
+        return logo ? logo.uri : null;
+    };
+    
+    const convertImage = async (uri: string) => {
+        try {
+          const resizedImageUri = await ImageResizer.createResizedImage(
+            uri,
+            600,
+            800, 
+            'JPEG',
+            100 
+          );
+          return resizedImageUri.uri
+        } catch (err) {
+          console.log(err);
+        }
+      };
 
     const splitResponse = (response: string) => {
         const tablePattern = /\|(.+)\|/g;
@@ -129,7 +186,20 @@ const PhotoPage = () => {
     };
 
     const renderLogo = () => {
-        return renderResult(CHOICES[3], logo);
+        return (
+            <View style={{ padding: 10 }}>
+                <Text style={{ fontSize: 18, fontWeight: 600 }}>Logo: </Text>
+                {logo ? 
+                    <Image
+                        style={{ width: 200, height: 300, alignSelf: 'center' }}
+                        source={{ uri: logo }}
+                        resizeMode="contain"
+                    />
+                    :
+                    <Text>Not Found!</Text>
+                }
+            </View>
+        )
     };
 
     async function goToIndex() {
@@ -157,7 +227,15 @@ const PhotoPage = () => {
     if(processing){
         return (
             <View style={styles.analyzing}>
-                <ThemedText>Analyzing...</ThemedText>
+                <ThemedText>Analyzing Text...</ThemedText>
+            </View>
+        )
+    }
+
+    if(processingLogo){
+        return (
+            <View style={styles.analyzing}>
+                <ThemedText>Detecting Logo...</ThemedText>
             </View>
         )
     }
