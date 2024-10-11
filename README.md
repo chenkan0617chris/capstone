@@ -1,16 +1,27 @@
-# Welcome to your Expo app 👋
+# Welcome to the capstone project photo label analyzer 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+
+## Environment
+
+1. Node.js https://nodejs.org/en
+2. Java openJDK 11
+3. Android SDK
+4. gradlew
 
 ## Get started
 
 1. Install dependencies
-
-   ```bash
+    ```bash
    npm install
    ```
+2. **Create .env file** at the root folder of this project, generate a openAI api key https://platform.openai.com/api-keys
+   ```
+   NODE_ENV=development
+   OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+   ```
 
-2. Start the app
+5. Start the app
 
    ```bash
     npx expo start
