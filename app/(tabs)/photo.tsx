@@ -86,12 +86,20 @@ const PhotoPage = () => {
     }, [text]);
 
     const analyzeLogo = async ()  => {
+        const width = await AsyncStorage.getItem('pic_width');
+        const height = await AsyncStorage.getItem('pic_height');
+
+        const imageData = {
+            width: Number(width),
+            height: Number(height)
+        }
+
         const model = await loadModel();
         const jpgUri = await convertImage(pic);
         if(!jpgUri) return;
     
         const tensor = await imageToTensor(jpgUri);
-        const prediction = await detectObjects(model, tensor);
+        const prediction = await detectObjects(model, tensor, imageData);
     
         if(!prediction){
             return null;
@@ -102,10 +110,10 @@ const PhotoPage = () => {
           [
             {
               crop: {
-                originX: prediction.bbox[0] < 0 ? 0 : prediction.bbox[0],
-                originY: prediction.bbox[1] < 0 ? 0 : prediction.bbox[1],
-                width: prediction.bbox[2],
-                height: prediction.bbox[3],
+                originX: prediction[0] < 0 ? 0 : prediction[0],
+                originY: prediction[1] < 0 ? 0 : prediction[1],
+                width: prediction[2],
+                height: prediction[3],
               },
             },
           ],
@@ -119,8 +127,8 @@ const PhotoPage = () => {
         try {
           const resizedImageUri = await ImageResizer.createResizedImage(
             uri,
-            600,
-            800, 
+            640,
+            640, 
             'JPEG',
             100 
           );

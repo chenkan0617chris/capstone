@@ -88,6 +88,8 @@ export default function HomeScreen() {
     if (!result.canceled) {
       setPic(result.assets[0].uri);
       await AsyncStorage.setItem('pic', result.assets[0].uri);
+      await AsyncStorage.setItem('pic_width', String(result.assets[0].width));
+      await AsyncStorage.setItem('pic_height', String(result.assets[0].height));
     }
   }
 
@@ -98,6 +100,9 @@ export default function HomeScreen() {
 
   const retake = async () => {
     await AsyncStorage.setItem('pic', '');
+    await AsyncStorage.setItem('pic_width', '');
+    await AsyncStorage.setItem('pic_height', '');
+
     setPic(undefined);
   };
 
@@ -113,6 +118,8 @@ export default function HomeScreen() {
     const croppedImage = await cropImageToSquare(newPic);
     setPic(croppedImage.uri);
     await AsyncStorage.setItem('pic', croppedImage.uri);
+    await AsyncStorage.setItem('pic_width', String(croppedImage.width));
+    await AsyncStorage.setItem('pic_height', String(croppedImage.height));
 
     await MediaLibrary.createAssetAsync(croppedImage.uri);
     } catch (e) {
@@ -158,7 +165,7 @@ export default function HomeScreen() {
           },
         },
       ],
-      { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
     );
 
     return cropped;
