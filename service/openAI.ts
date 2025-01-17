@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import { ChatCompletionMessage } from "openai/resources";
 import { CHOICES } from "../constants/constants";
-import Config from 'react-native-config';
 
 const query = async (text: string, choices: string[]):Promise<ChatCompletionMessage> => {
     let prompt = `
@@ -24,7 +23,7 @@ const query = async (text: string, choices: string[]):Promise<ChatCompletionMess
         prompt += '\n Brand:';
     }
 
-    const openAiApiKey = Config.OPENAI_API_KEY;
+    const openAiApiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
     const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
 
