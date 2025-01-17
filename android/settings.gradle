@@ -44,7 +44,7 @@ if (getRNMinorVersion() >= 75) {
   }
 }
 
-rootProject.name = 'capstone'
+rootProject.name = 'Label Analyzer'
 
 dependencyResolutionManagement {
   versionCatalogs {
